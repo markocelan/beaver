@@ -55,11 +55,16 @@ class Transport(object):
             for mod in priority:
                 try:
                     json = __import__(mod)
+
                     def rawjson_formatter(data):
-                        json_data = json.loads(data['@message'])
-                        for field in {'@source', '@type', '@tags', '@source_host', '@source_path'}:
-                            json_data[field] = data[field]
-                        return json.dumps(json_data)
+                        try:
+                            json_data = json.loads(data['@message'])
+                            for field in ['@source', '@type', '@tags', '@source_host', '@source_path']:
+                                json_data[field] = data[field]
+                        except ValueError:
+                            return None
+                        return json.dumps(json_data )
+
                     self._formatter = rawjson_formatter
                 except ImportError:
                     pass
@@ -98,7 +103,7 @@ class Transport(object):
     def format(self, filename, timestamp, line):
         """Returns a formatted log line"""
         return self._formatter({
-            '@source': "file://{0}{1}".format(self._current_host, filename),
+            '@source': 'file://{0}{1}'.format(self._current_host, filename),
             '@type': self._file_config.get('type', filename),
             '@tags': self._file_config.get('tags', filename),
             '@fields': self._file_config.get('fields', filename),
